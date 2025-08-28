@@ -28,17 +28,17 @@ let CURRENT_EVENTS = {calendar: []};     // array of mapped events
 let CURRENT_PLAN_META = null;
 let CURRENT_USER = {
   startDate: '2025-09-01',
-  name: 'Hello World!',
+  name: 'Joe',
   age: 40,
   gender: 'Male',
-  heightIn: 65,
-  weightLb: 150,
-  targetWeightLb: 175,
+  heightIn: 72,
+  weightLb: 170,
+  targetWeightLb: 180,
   activityLevel: 'moderate',
-  hoursPerWeek: 12,
-  restDays: ['Tuesday'],
-  trainDays: ['Sunday'],
-  goals: ['endurance']
+  hoursPerWeek: 6,
+  restDays: ['Sunday'],
+  trainDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  goals: ['Build Strength', 'Gain Muscle', 'endurance', 'Lose Body Fat']
 }
 
 let MESSAGES = [];
@@ -192,8 +192,7 @@ app.post('/api/fitTrAIner', async (req, res) => {
         `- Calendar array must contain 28 elements.`,
         `- Calculate day of the week correctly for each day. First day may or may not be a Monday. It depends on the StartDate`,
         `- Use the client's rest/training days above.`,
-        `- Keep workouts durations-only (no clock times).`,
-        `- Meals should be realistic and goal-aligned. Include macronutrient information for each meal`,
+        `- Meals should be realistic and goal-aligned. Meals MUST include macronutrient information for each meal`,
         `- Plan must contain 28 days starting with today as the startDate`,
         `- Each week must contain a unique mealplan and workout schedule.`,
         `User Overrides:`,
