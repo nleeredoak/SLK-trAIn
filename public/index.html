@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Fitness Calendar — Month View (Simplified JSON)</title>
+    <style>
+        :root { --bg:#0b0f14; --card:#121822; --muted:#8ea2b6; --text:#e8eef7; --accent:#7cc6ff; --border:#1e2735; --accent-2:#8fffab; }
+        *{ box-sizing:border-box; }
+        body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
+        header{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#0e141c; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+        .title{ font-weight:800; letter-spacing:.2px; }
+        .toolbar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        button{ background:#0f1620; color:var(--text); border:1px solid var(--border); border-radius:10px; padding:8px 12px; cursor:pointer; }
+        button:hover{ border-color:var(--accent); }
+        .toggle{ display:inline-flex; gap:8px; align-items:center; border:1px solid var(--border); border-radius:999px; padding:6px 10px; background:#0f1620; color:var(--muted); }
+        .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
+        .meta{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+        .plan-name{ color:var(--muted); }
+        .calendar{ display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
+        .weekday{ text-align:center; color:#9db2c7; font-weight:700; margin:6px 0; }
+        .day{ background:var(--card); border:1px solid var(--border); border-radius:12px; min-height:130px; display:flex; flex-direction:column; }
+        .day.outside{ opacity:.4; }
+        .day-header{ display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-bottom:1px solid #151d2b; }
+        .date{ font-weight:700; }
+        .today{ outline:2px solid #2196f3; border-radius:12px; }
+        .stack{ padding:8px; display:flex; flex-direction:column; gap:6px; }
+        .card{ background:#0f1620; border:1px solid var(--border); border-radius:10px; padding:6px 8px; font-size:13px; cursor:pointer; display:flex; gap:6px; align-items:flex-start; }
+        .card .icon{ width:18px; flex:0 0 18px; text-align:center; }
+        .card.meal{ border-left:3px solid var(--accent); }
+        .card.workout{ border-left:3px solid var(--accent-2); }
+        .pill{ font-size:11px; color:#a7b4c2; border:1px solid var(--border); border-radius:999px; padding:2px 8px; }
+
+        /* Modal */
+        .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; }
+        .modal{ width:min(640px,92vw); background:#101724; border:1px solid var(--border); border-radius:14px; padding:14px; }
+        .modal header{ border-bottom:1px solid var(--border); padding:6px 0 10px 0; margin-bottom:10px; }
+        .modal h3{ margin:0; font-size:18px; }
+        .modal .content{ line-height:1.5; color:#c7d1df; }
+        .modal footer{ display:flex; justify-content:flex-end; margin-top:14px; gap:8px; }
+        .close-btn{ background:#14314a; }
+        .copy-btn{ background:#0f2a40; }
+
+        @media (max-width: 900px){
+            .calendar{ grid-template-columns:1fr; }
+            .weekday{ display:none; }
+        }
+
+
+
+        :root{
+  --va-bg: #0f172a;         /* panel */
+  --va-surface: #111827;    /* input surface */
+  --va-border: #243142;
+  --va-text: #e5e7eb;
+  --va-muted: #9ca3af;
+  --va-accent: #3b82f6;
+  --va-user: #1f2937;
+  --va-assistant: #0b1223;
+  --va-shadow: 0 12px 30px rgba(0,0,0,.35);
+}
+
+*{ box-sizing: border-box; }
+
+.va{
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: min(300px, 90vw);
+  height: min(600px, 90vh);
+  max-height: 700vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--va-bg);
+  color: var(--va-text);
+  border: 1px solid var(--va-border);
+  border-radius: 14px;
+  box-shadow: var(--va-shadow);
+  overflow: hidden;
+  font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  z-index: 9999;
+}
+
+.va__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--va-border);
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+}
+
+.va__title{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.va__dot{
+  width: 8px; height: 8px; border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e99;
+}
+
+.va__controls{ display: flex; gap: 6px; }
+
+.va__btn{
+  border: 1px solid var(--va-border);
+  background: #0b1226;
+  color: var(--va-text);
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.va__btn:hover{ border-color:#334155; }
+.va__btn--icon{ width: 34px; height: 32px; padding: 0; }
+
+.va__body{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  min-height: 550px;
+}
+
+.va__messages{
+  margin: 0;
+  padding: 0 2px 4px;
+  list-style: none;
+  overflow: auto;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-behavior: smooth;
+}
+
+.va__msg{
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  max-width: 85%;
+}
+.va__msg--user{ align-self: flex-end; flex-direction: row-reverse; }
+.va__msg--assistant{ align-self: flex-start; }
+
+.va__bubble{
+  padding: 8px 10px;
+  border: 1px solid var(--va-border);
+  border-radius: 12px;
+  background: var(--va-assistant);
+  color: var(--va-text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.va__msg--user .va__bubble{
+  background: var(--va-user);
+}
+
+.va__avatar{
+  flex: 0 0 28px;
+  width: 28px; height: 28px; border-radius: 999px;
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 12px;
+  color: white;
+  background: var(--va-accent);
+  border: 1px solid var(--va-border);
+}
+
+.va__composer{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  background: var(--va-surface);
+  border: 1px solid var(--va-border);
+  border-radius: 10px;
+  padding: 8px;
+}
+.va__input{
+  resize: none;
+  background: transparent;
+  color: var(--va-text);
+  border: none;
+  outline: none;
+  max-height: 120px;
+}
+.va__btn--send{
+  background: var(--va-accent);
+  border-color: transparent;
+  color: white;
+  padding: 8px 14px;
+}
+.va__btn--send[disabled]{ opacity:.6; cursor: not-allowed; }
+
+.va__status{
+  color: var(--va-muted);
+  font-size: 12px;
+  min-height: 16px;
+}
+
+/* Minimized state */
+.va--min{
+  height: auto; max-height: none;
+}
+.va--min .va__body{ display: none; }
+    </style>
+</head>
+<body>
+<header>
+    <div class="title">🗓️ Fitness Calendar — Month View</div>
+    <div class="toolbar">
+        <button id="prevMonth">◀️ Prev</button>
+        <div id="monthLabel" class="pill"></div>
+        <button id="nextMonth">Next ▶️</button>
+        <label class="toggle"><input type="checkbox" id="toggleMeals" checked> meals</label>
+        <label class="toggle"><input type="checkbox" id="toggleWorkouts" checked> workouts</label>
+
+        <button id="openPlannerBtn" class="btn">Plan ⚙️</button>
+    </div>
+</header>
+
+<div class="wrap">
+    <div class="meta">
+        <div class="plan-name" id="planName"></div>
+    </div>
+
+    <!-- Weekday headers -->
+    <div class="calendar" id="weekdayRow"></div>
+
+    <!-- Month grid -->
+    <div class="calendar" id="calendar"></div>
+
+
+    <div class="va" id="va" aria-live="polite">
+      <header class="va__header">
+        <div class="va__title">
+          <span class="va__dot" aria-hidden="true"></span>
+          Virtual Assistant
+        </div>
+        <div class="va__controls">
+          <button class="va__btn va__btn--icon" id="vaMinBtn" aria-label="Minimize">—</button>
+          <button class="va__btn va__btn--icon" id="vaCloseBtn" aria-label="Close">✕</button>
+        </div>
+      </header>
+
+      <section class="va__body">
+        <ul class="va__messages" id="vaMessages" aria-label="Conversation"></ul>
+
+        <div class="va__composer" role="form" aria-label="Send a message">
+          <textarea id="vaInput" class="va__input" rows="2" placeholder="Type your message..." aria-label="Message"></textarea>
+          <button id="vaSend" class="va__btn va__btn--send" aria-label="Send">Send</button>
+        </div>
+
+        <div class="va__status" id="vaStatus" aria-live="polite"></div>
+      </section>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+        <header><h3 id="modalTitle"></h3></header>
+        <div class="content" id="modalContent"></div>
+        <footer>
+            <button class="copy-btn" id="copyModal">Copy</button>
+            <button class="close-btn" id="closeModal">Close</button>
+        </footer>
+    </div>
+</div>
+
+<script>
+    /** CONSTANTS **/
+    const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    const weekdayRow = document.getElementById('weekdayRow');
+    const calEl = document.getElementById('calendar');
+    const monthLabel = document.getElementById('monthLabel');
+    const planNameEl = document.getElementById('planName');
+
+    let current = startOfMonth(new Date());
+
+    function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+
+    let PLAN = null;
+    let STATE = { startDate: null, duration: 0, cardsByDate: new Map() };
+    let viewYear = null, viewMonth = null; // 0-11
+
+    // Icons
+    const MEAL_ICONS = { "breakfast":"🥞","lunch":"🥪","dinner":"🍽","evening snack":"🌙","snack":"🍎","pre-workout":"💥","dinner (post-workout)":"🍽" };
+    const WORKOUT_ICON_RULES = [
+        {match:/strength|hypertrophy|weights|upper|lower|full body|push|pull/i, icon:"💪"},
+        {match:/run|tempo|long run|5k/i, icon:"🏃"},
+        {match:/interval|hiit|speed/i, icon:"⚡"},
+        {match:/cycling|bike/i, icon:"🚴"},
+        {match:/cardio|conditioning/i, icon:"❤️"},
+        {match:/mobility|stretch|yoga|rest/i, icon:"🧘"}
+    ];
+
+    function mealIconByName(name){
+        const key = String(name||"").toLowerCase();
+        for (const k of Object.keys(MEAL_ICONS)){ if (key.startsWith(k)) return MEAL_ICONS[k]; }
+        return "🍴";
+    }
+    function workoutIconFromFirstItem(first){
+        const t = String(first||"");
+        for (const rule of WORKOUT_ICON_RULES){ if (rule.match.test(t)) return rule.icon; }
+        return "🏋️";
+    }
+    function workoutTitleFromItems(items){
+        if (!Array.isArray(items) || items.length === 0) return "Workout";
+        // Use the first item's name-like prefix (before '—' or up to 30 chars).
+        const raw = items[0];
+        const name = String(raw).split("—")[0].trim();
+        return name.slice(0, 30) || "Workout";
+    }
+
+    function stripTime(dt){ return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
+    function dateKey(dt){ return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; }
+
+
+    async function fetchEvents(year, month) {
+      try {
+        const res = await fetch(`/api/events?year=${year}&month=${month}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        console.error('Failed to load events:', err);
+        return { events: [] };
+      }
+    }
+
+    /** Load simplified plan.json and build state **/
+    async function loadPlan(){
+        // const resp = await fetch('./plan.json');   // <- your simplified file
+        // const plan = await resp.json();
+        // PLAN = plan;
+        const plan = await fetchEvents(current.getFullYear(), current.getMonth() + 1);
+
+        planNameEl.textContent = plan.meta?.plan_name || 'Plan';
+
+        // Determine start date: prefer meta.startDate; else today.
+        let start = new Date();
+        if (plan.meta?.startDate){
+            const [y,m,d] = plan.meta.startDate.split('-').map(Number);
+            start = new Date(y, m-1, d);
+        }
+        STATE.startDate = stripTime(start);
+        STATE.duration  = Number(plan.meta?.duration_days || (Array.isArray(plan.calendar) ? plan.calendar.length : 30));
+        STATE.cardsByDate = new Map();
+
+        // Build a date index from "number" (1-based) → actual date
+        const dayToDate = (n) => {
+            const dt = new Date(STATE.startDate);
+            dt.setDate(STATE.startDate.getDate() + (n-1));
+            return dt;
+        };
+
+        // Create cards for each calendar entry
+        if (Array.isArray(plan.calendar)){
+            for (const entry of plan.calendar){
+                // if (!entry || typeof entry.dayNumber !== 'number') continue;
+                // const dt = dayToDate(entry.dayNumber);
+                var b = entry.date.split(/\D/);
+                // const dt = new Date(entry.date);
+                const dt = new Date(b[0], b[1]-1, b[2], 0, 0, 0);
+                const key = dateKey(dt);
+                const cards = [];
+
+                // Meals
+                if (Array.isArray(entry.meals)){
+                    for (const m of entry.meals){
+                        cards.push({
+                            kind: 'meal',
+                            title: m?.name || 'Meal',
+                            items: Array.isArray(m?.items) ? m.items : [],
+                            icon: mealIconByName(m?.name || '')
+                        });
+                    }
+                }
+
+                // Workout
+                if (entry.workout){
+                    const w = entry.workout;
+                    const items = Array.isArray(w.items) ? w.items : [];
+                    cards.push({
+                        kind: 'workout',
+                        title: workoutTitleFromItems(items),
+                        duration: typeof w.duration === 'number' ? w.duration : 0,
+                        items,
+                        icon: workoutIconFromFirstItem(items[0])
+                    });
+                }
+
+                STATE.cardsByDate.set(key, cards);
+            }
+        }
+
+        // Set initial view to the start date’s month
+        viewYear = STATE.startDate.getFullYear();
+        viewMonth = STATE.startDate.getMonth();
+
+        renderWeekdayHeader();
+        renderMonth();
+    }
+
+    /** Rendering **/
+    function renderWeekdayHeader(){
+        weekdayRow.innerHTML = '';
+        WEEKDAYS.forEach(w => {
+            const h = document.createElement('div');
+            h.className = 'weekday';
+            h.textContent = w;
+            weekdayRow.appendChild(h);
+        });
+    }
+
+    function renderMonth(){
+        calEl.innerHTML = '';
+        const showMeals = document.getElementById('toggleMeals').checked;
+        const showWorkouts = document.getElementById('toggleWorkouts').checked;
+
+        const firstOfMonth = new Date(viewYear, viewMonth, 1);
+        const startWeekday = firstOfMonth.getDay(); // 0=Sun
+        const gridStart = new Date(firstOfMonth);
+        gridStart.setDate(firstOfMonth.getDate() - startWeekday);
+
+        monthLabel.textContent = `${firstOfMonth.toLocaleString(undefined, {month:'long'})} ${viewYear}`;
+
+        const todayKey = dateKey(stripTime(new Date()));
+
+        for (let i=0; i<42; i++){
+            const cellDate = new Date(gridStart);
+            cellDate.setDate(gridStart.getDate() + i);
+            const inCurrentMonth = (cellDate.getMonth() === viewMonth);
+
+            const cell = document.createElement('div');
+            cell.className = 'day' + (inCurrentMonth ? '' : ' outside');
+            if (dateKey(cellDate) === todayKey) cell.classList.add('today');
+
+            const head = document.createElement('div');
+            head.className = 'day-header';
+            head.innerHTML = `<span class="date">${cellDate.getDate()}</span><span class="pill">${WEEKDAYS[cellDate.getDay()]}</span>`;
+            cell.appendChild(head);
+
+            const stack = document.createElement('div');
+            stack.className = 'stack';
+
+            const cards = STATE.cardsByDate.get(dateKey(cellDate)) || [];
+            for (const c of cards){
+                if ((c.kind==='meal' && !showMeals) || (c.kind==='workout' && !showWorkouts)) continue;
+                if (c.kind==='workout' && (!c.items || c.items.length <=0)) continue;
+                const card = document.createElement('div');
+                card.className = `card ${c.kind}`;
+                const icon = `<span class="icon">${c.icon || (c.kind==='meal'?'🍴':'🏋️')}</span>`;
+                card.innerHTML = `${icon}<span>${escapeHtml(c.title)}</span>`;
+                card.addEventListener('click', () => openDetails(cellDate, c));
+                stack.appendChild(card);
+            }
+
+            cell.appendChild(stack);
+            calEl.appendChild(cell);
+        }
+    }
+
+    /** Modal **/
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('copyModal').addEventListener('click', copyModalText);
+    modalBackdrop.addEventListener('click', (e)=>{ if (e.target===modalBackdrop) closeModal(); });
+
+    function openDetails(date, card){
+        const dateStr = date.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+        modalTitle.textContent = `${card.kind==='meal' ? 'Meal' : 'Workout'} — ${card.title} (${dateStr})`;
+        if (card.kind === 'meal'){
+            modalContent.innerHTML = `<div><strong>Items:</strong></div><ul>${(card.items||[]).map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+        } else {
+            const dur = (typeof card.duration==='number' && card.duration>0) ? `<div><strong>Duration:</strong> ${card.duration} minutes</div>` : '';
+            modalContent.innerHTML = `${dur}<div><strong>Details:</strong></div><ul>${(card.items||[]).map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+        }
+        modalBackdrop.style.display = 'flex';
+    }
+    function closeModal(){ modalBackdrop.style.display = 'none'; }
+    function copyModalText(){
+        const text = modalContent.innerText.trim();
+        navigator.clipboard.writeText(text);
+    }
+    function escapeHtml(s){
+        return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    /** Navigation **/
+    document.getElementById('prevMonth').addEventListener('click', ()=>{
+        if (viewMonth===0){ viewMonth=11; viewYear--; } else { viewMonth--; }
+        renderMonth();
+    });
+    document.getElementById('nextMonth').addEventListener('click', ()=>{
+        if (viewMonth===11){ viewMonth=0; viewYear++; } else { viewMonth++; }
+        renderMonth();
+    });
+
+    document.getElementById('openPlannerBtn').addEventListener('click', ()=>{
+        document.location.href="onboard.html"
+    });
+
+    /** Filters **/
+    document.getElementById('toggleMeals').addEventListener('change', renderMonth);
+    document.getElementById('toggleWorkouts').addEventListener('change', renderMonth);
+
+    /** Start **/
+    loadPlan();
+
+
+
+    (() => {
+  const el = {
+    root: document.getElementById('va'),
+    list: document.getElementById('vaMessages'),
+    input: document.getElementById('vaInput'),
+    send: document.getElementById('vaSend'),
+    status: document.getElementById('vaStatus'),
+    minBtn: document.getElementById('vaMinBtn'),
+    closeBtn: document.getElementById('vaCloseBtn')
+  };
+
+  // Local state mirrors server list (array of { role:'user'|'assistant', content:'...' })
+  const state = { messages: [] };
+  let sending = false;
+
+  // Render messages list
+  function render() {
+    el.list.innerHTML = '';
+    for (const m of state.messages) {
+      const li = document.createElement('li');
+      li.className = `va__msg va__msg--${m.role === 'user' ? 'user' : 'assistant'}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'va__avatar';
+      avatar.textContent = m.role === 'user' ? 'U' : 'AI';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'va__bubble';
+      bubble.textContent = m.content ?? '';
+
+      li.appendChild(avatar);
+      li.appendChild(bubble);
+      el.list.appendChild(li);
+    }
+    el.list.scrollTop = el.list.scrollHeight;
+  }
+
+  // Send handler
+  async function onSend() {
+    const text = el.input.value.trim();
+    if (!text || sending) return;
+
+    // Optimistic append (optional)
+    state.messages.push({ role: 'user', content: text });
+    render();
+    el.input.value = '';
+    el.input.focus();
+
+    sending = true;
+    setStatus('Sending…');
+    setDisabled(true);
+
+    try {
+      const resp = await fetch('/api/fitTrAIner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // The backend owns the source of truth for the list.
+        // We send the new user input and the current list so the server can update and return the full list.
+        body: JSON.stringify({ input: text, messages: state.messages })
+      });
+
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error(`HTTP ${resp.status}: ${t}`);
+      }
+
+      // Expecting: { messages: [ {role, content}, ... ] }
+      const data = await resp.json();
+      if (!Array.isArray(data?.messages)) {
+        throw new Error('Malformed response: expected { messages: [...] }');
+      }
+
+      state.messages = data.messages;
+      render();
+      setStatus(''); // clear
+      loadPlan();
+    } catch (err) {
+      console.error(err);
+      setStatus('Failed to send. Please try again.');
+    } finally {
+      sending = false;
+      setDisabled(false);
+    }
+  }
+
+  // Small helpers
+  function setStatus(msg){ el.status.textContent = msg || ''; }
+  function setDisabled(dis){
+    el.send.disabled = dis;
+    el.input.disabled = dis;
+  }
+
+  // Keyboard UX: Enter = send, Shift+Enter = newline
+  el.input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      onSend();
+    }
+  });
+
+  el.send.addEventListener('click', onSend);
+
+  // Minimize / Close
+  el.minBtn.addEventListener('click', () => el.root.classList.toggle('va--min'));
+  el.closeBtn.addEventListener('click', () => el.root.remove());
+
+  // Optional: if you want to pre-load the conversation from server on page load,
+  // you can uncomment the block below (requires your backend to accept GET):
+  /*
+  (async function initLoad(){
+    try{
+      const r = await fetch('/api/virtualEndPoint');
+      if (r.ok){
+        const data = await r.json();
+        if (Array.isArray(data?.messages)) {
+          state.messages = data.messages;
+          render();
+        }
+      }
+    }catch(e){ console.warn('Initial load failed:', e); }
+  })();
+  */
+
+  // Initial render (empty list)
+  render();
+})();
+</script>
+</body>
+</html>

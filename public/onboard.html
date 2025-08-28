@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Client Onboarding – Fitness Plan Prompt</title>
+    <style>
+        :root { --bg:#0b0f14; --card:#121822; --text:#e8eef7; --muted:#8ea2b6; --border:#1e2735; --accent:#7cc6ff; }
+        *{ box-sizing:border-box; }
+        body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text);}
+        header{ padding:16px 20px; background:#0e141c; border-bottom:1px solid var(--border); font-weight:800; }
+        .wrap{ max-width:900px; margin:0 auto; padding:20px; }
+        form{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; display:grid; gap:14px; }
+        fieldset{ border:1px solid var(--border); border-radius:12px; padding:12px; }
+        legend{ color:var(--muted); padding:0 6px; }
+        label{ display:block; font-size:14px; color:#c4cede; margin-bottom:6px; }
+        input[type="text"], input[type="number"], select{
+            width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:#0f1620; color:var(--text);
+        }
+        .row{ display:grid; grid-template-columns: repeat(2,1fr); gap:12px; }
+        .days{ display:grid; grid-template-columns: repeat(4,1fr); gap:8px; }
+        .chip{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--border); border-radius:999px; background:#0f1620; }
+        .goals{ display:grid; grid-template-columns: repeat(3,1fr); gap:8px; }
+        .actions{ display:flex; gap:10px; justify-content:flex-end; }
+        button{ background:#0f1620; color:var(--text); border:1px solid var(--border); padding:10px 14px; border-radius:12px; cursor:pointer; }
+        button:hover{ border-color:var(--accent); }
+        .hint{ color:var(--muted); font-size:12px; }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+<header>📝 Client Onboarding</header>
+<div class="wrap">
+    <form id="onboardForm">
+        <fieldset>
+            <legend>Client</legend>
+            <div class="row">
+                <div>
+                    <label for="name">Name</label>
+                    <input id="name" type="text" placeholder="Nate Lee" required />
+                </div>
+                <div>
+                    <label for="gender">Gender</label>
+                    <select id="gender" required>
+                        <option value="" disabled selected>Select…</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Non-binary</option>
+                        <option>Prefer not to say</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="age">Age</label>
+                    <input id="age" type="number" min="10" max="100" placeholder="36" required />
+                </div>
+                <div>
+                    <label for="heightIn">Height (inches)</label>
+                    <input id="heightIn" type="number" min="48" max="90" placeholder="69 (5'9”)" required />
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="weightLb">Current Weight (lb)</label>
+                    <input id="weightLb" type="number" min="70" max="400" placeholder="165" required />
+                </div>
+                <div>
+                    <label for="targetWeightLb">Target Weight (lb)</label>
+                    <input id="targetWeightLb" type="number" min="70" max="400" placeholder="170" required />
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Activity</legend>
+            <div class="row">
+                <div>
+                    <label for="activityLevel">Activity Level</label>
+                    <select id="activityLevel" required>
+                        <option value="" disabled selected>Select…</option>
+                        <option>inactive</option>
+                        <option>light activity</option>
+                        <option>moderate</option>
+                        <option>very active</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="hoursPerWeek">Hours of Activity / week</label>
+                    <input id="hoursPerWeek" type="number" min="0" max="40" step="0.5" placeholder="10" required />
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Schedule</legend>
+
+            <label>Training Days (check all that apply)</label>
+            <div class="days" id="trainDays">
+                <!-- checkboxes injected by JS -->
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Goals</legend>
+            <div class="goals" id="goals">
+                <!-- goal checkboxes injected by JS -->
+            </div>
+        </fieldset>
+
+        <div class="actions">
+            <button type="reset">Reset</button>
+            <button type="submit" id="submitBtn">Create Schedule</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const WEEKDAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+    const DEFAULT_GOALS = [
+        "Build strength","Better shape / tone","Gain muscle","Lose body fat",
+        "Endurance","10,000 steps per day","Run a marathon","Improve mobility",
+        "Reduce back pain","General health","Cycling Endurance","Swimming Endurance"
+    ];
+
+    function injectDayCheckboxes(containerId, namePrefix){
+        const el = document.getElementById(containerId);
+        el.innerHTML = "";
+        WEEKDAYS.forEach(d=>{
+            const id = `${namePrefix}-${d.toLowerCase()}`;
+            el.insertAdjacentHTML('beforeend', `
+      <label class="chip">
+        <input type="checkbox" id="${id}" value="${d}" />
+        ${d}
+      </label>
+    `);
+        });
+    }
+
+    function injectGoals(){
+        const el = document.getElementById('goals');
+        el.innerHTML = "";
+        DEFAULT_GOALS.forEach((g,i)=>{
+            const id = `goal-${i}`;
+            el.insertAdjacentHTML('beforeend', `
+      <label class="chip">
+        <input type="checkbox" id="${id}" value="${g}"> ${g}
+      </label>
+    `);
+        });
+    }
+
+    injectDayCheckboxes('trainDays','train');
+    injectGoals();
+
+    function getCheckedValues(containerId){
+        return Array.from(document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`)).map(x=>x.value);
+    }
+
+    // Handle submit
+    document.getElementById('onboardForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.textContent = "Creating Schedule...";
+        submitBtn.disabled = true;
+
+        const trainDays = getCheckedValues('trainDays');
+        const restDays = WEEKDAYS.filter(d => !trainDays.includes(d));
+
+        const data = {
+            name: document.getElementById('name').value.trim(),
+            age: Number(document.getElementById('age').value),
+            gender: document.getElementById('gender').value,
+            heightIn: Number(document.getElementById('heightIn').value),
+            weightLb: Number(document.getElementById('weightLb').value),
+            targetWeightLb: Number(document.getElementById('targetWeightLb').value),
+            activityLevel: document.getElementById('activityLevel').value,
+            hoursPerWeek: Number(document.getElementById('hoursPerWeek').value),
+            restDays,
+            trainDays,
+            goals: getCheckedValues('goals')
+        };
+
+        try {
+          const res = await fetch('/api/plan/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          await res.json(); // not used here; we re-fetch month data below
+          document.location.href="index.html"
+        } catch (err) {
+          console.error(err);
+          submitBtn.textContent = "Create Schedule";
+          submitBtn.disabled = false;
+        }
+    });
+
+    async function fetchUser() {
+      try {
+        const res = await fetch(`/api/user`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        console.error('Failed to load user:', err);
+        return null;
+      }
+    }
+
+    async function loadUser(){
+      const user = await fetchUser();
+      if(user) {
+        document.getElementById('name').value = user.name;
+        document.getElementById('age').value = user.age;
+        document.getElementById('gender').value = user.gender;
+        document.getElementById('heightIn').value = user.heightIn;
+        document.getElementById('weightLb').value = user.weightLb;
+        document.getElementById('targetWeightLb').value = user.targetWeightLb;
+        document.getElementById('activityLevel').value = user.activityLevel;
+        document.getElementById('hoursPerWeek').value = user.hoursPerWeek;
+        initCheckboxes('restDays', user.restDays);
+        initCheckboxes('trainDays', user.trainDays);
+        initCheckboxes('goals', user.goals);
+      }
+    }
+
+    function initCheckboxes(parentId, values) {
+      const parent = document.getElementById(parentId);
+      if (parent) {
+        const want = new Set(values.map(v => String(v).toLowerCase())); // case-insensitive; remove .toLowerCase() if not needed
+        parent.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          const key = String(cb.value).toLowerCase(); // or: cb.id / cb.name / cb.dataset.value
+          cb.checked = want.has(key);
+        });
+      }
+    }
+
+    loadUser();
+</script>
+</body>
+</html>
